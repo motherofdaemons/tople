@@ -11,8 +11,14 @@ pub struct DieFormula {
 
 #[derive(Debug, PartialEq)]
 enum DieMath {
-    Add(Die, u32),
-    // Sub(Die, u32),
+    AddDie(Die, u32),
+    AddFlat(u32),
+    // TODO: Support Subtracting
+    // SubDie(Die, u32),
+    // SubFlat(u32),
+    // TODO: Support keep highest and lowest
+    // KeepHighest(idk yet),
+    // KeepLowest(idk yet),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -25,13 +31,16 @@ impl FromStr for DieFormula {
         let steps: Result<Vec<DieMath>, ParseDieFormulaError> = s
             .split('+')
             .map(|s| match s.split('d').collect::<Vec<_>>()[..] {
-                ["", sides] => Ok::<DieMath, ParseDieFormulaError>(DieMath::Add(
+                ["", sides] => Ok::<DieMath, ParseDieFormulaError>(DieMath::AddDie(
                     Die::new(sides.parse::<u32>().map_err(|_| ParseDieFormulaError)?),
                     1,
                 )),
-                [num, sides] => Ok::<DieMath, ParseDieFormulaError>(DieMath::Add(
+                [num, sides] => Ok::<DieMath, ParseDieFormulaError>(DieMath::AddDie(
                     Die::new(sides.parse::<u32>().map_err(|_| ParseDieFormulaError)?),
                     num.parse::<u32>().map_err(|_| ParseDieFormulaError)?,
+                )),
+                [flat] => Ok::<DieMath, ParseDieFormulaError>(DieMath::AddFlat(
+                    flat.parse::<u32>().map_err(|_| ParseDieFormulaError)?,
                 )),
                 _ => Err(ParseDieFormulaError),
             })
@@ -48,7 +57,8 @@ impl DieFormula {
         self.steps
             .iter()
             .map(|s| match s {
-                DieMath::Add(d, t) => (0..*t).map(|_| i64::from(d.roll())).sum::<i64>(),
+                DieMath::AddDie(d, t) => (0..*t).map(|_| i64::from(d.roll())).sum::<i64>(),
+                DieMath::AddFlat(f) => (*f).into(),
             })
             .sum()
     }
@@ -141,11 +151,15 @@ mod tests {
     }
     #[test]
     fn parse_die_formula() {
-        let formula = "d20+d20".parse::<DieFormula>();
+        let formula = "d20+2d6+456".parse::<DieFormula>();
         assert_eq!(
             formula,
             Ok(DieFormula {
-                steps: vec![DieMath::Add(Die::new(20), 1), DieMath::Add(Die::new(20), 1)]
+                steps: vec![
+                    DieMath::AddDie(Die::new(20), 1),
+                    DieMath::AddDie(Die::new(6), 2),
+                    DieMath::AddFlat(456),
+                ]
             })
         )
     }
