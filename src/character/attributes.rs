@@ -1,8 +1,30 @@
+pub static STRENGTH: usize = 0;
+pub static DEXTERITY: usize = 1;
+pub static CONSTITUTION: usize = 2;
+pub static INTELLIGENCE: usize = 3;
+pub static WISDOM: usize = 4;
+pub static CHARISMA: usize = 5;
+
 pub struct Attributes {
-    str: i32,
-    dex: i32,
-    con: i32,
-    int: i32,
-    wis: i32,
-    cha: i32,
+    stats: Vec<i32>,
+}
+
+impl Default for Attributes {
+    fn default() -> Self {
+        Self {
+            stats: vec![10, 10, 10, 10, 10, 10],
+        }
+    }
+}
+
+impl Attributes {
+    #[must_use]
+    pub fn get_attr(&self, attr: usize) -> i32 {
+        self.stats[attr]
+    }
+
+    #[must_use]
+    pub fn get_attr_mod(&self, attr: usize) -> i32 {
+        (self.stats[attr] / 2) - 5
+    }
 }
