@@ -6,13 +6,13 @@ pub static WISDOM: usize = 4;
 pub static CHARISMA: usize = 5;
 
 pub struct Attributes {
-    stats: Vec<i32>,
+    stats: [i32; 6],
 }
 
 impl Default for Attributes {
     fn default() -> Self {
         Self {
-            stats: vec![10, 10, 10, 10, 10, 10],
+            stats: [10, 10, 10, 10, 10, 10],
         }
     }
 }
