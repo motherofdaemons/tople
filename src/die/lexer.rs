@@ -2,6 +2,8 @@ use std::str::FromStr;
 
 use itertools::Itertools;
 
+use super::dice::Dice;
+
 #[derive(Debug, PartialEq)]
 pub struct Lexer {
     tokens: Vec<Token>,
@@ -9,8 +11,8 @@ pub struct Lexer {
 
 #[derive(Debug, PartialEq)]
 enum Token {
-    Die(u32, u32),
-    Flat(u32),
+    Roll(Dice, u32),
+    Flat(i32),
     Add,
     Sub,
 }
@@ -30,19 +32,19 @@ impl FromStr for Lexer {
                 s => {
                     if s.contains('d') {
                         match s.split('d').collect_tuple() {
-                            Some(("", sides)) => Ok(Token::Die(
-                                sides.parse::<u32>().map_err(|_| ParseDieFormulaError)?,
+                            Some(("", sides)) => Ok(Token::Roll(
+                                Dice::new(sides.parse::<u32>().map_err(|_| ParseDieFormulaError)?),
                                 1,
                             )),
-                            Some((rolls, sides)) => Ok(Token::Die(
-                                sides.parse::<u32>().map_err(|_| ParseDieFormulaError)?,
+                            Some((rolls, sides)) => Ok(Token::Roll(
+                                Dice::new(sides.parse::<u32>().map_err(|_| ParseDieFormulaError)?),
                                 rolls.parse::<u32>().map_err(|_| ParseDieFormulaError)?,
                             )),
                             None => Err(ParseDieFormulaError),
                         }
                     } else {
                         Ok(Token::Flat(
-                            s.parse::<u32>().map_err(|_| ParseDieFormulaError)?,
+                            s.parse::<i32>().map_err(|_| ParseDieFormulaError)?,
                         ))
                     }
                 }
@@ -50,14 +52,48 @@ impl FromStr for Lexer {
             .collect_vec()
             .into_iter()
             .collect();
+        // TODO: validate that the tokens are valid by having value operation value so on and so on
         Ok(Self { tokens: tokens? })
     }
 }
 
+enum CalcSteps {
+    Add,
+    Sub,
+    Value(i32),
+}
+
 impl Lexer {
     #[must_use]
-    pub fn calculate(&self) -> i64 {
-        todo!()
+    pub fn calculate(&self) -> i32 {
+        let mut total = 0;
+        // We want the first value to add so we start the calculator on add
+        let mut prev = CalcSteps::Add;
+        self.tokens
+            .iter()
+            .map(|t| match t {
+                Token::Add => CalcSteps::Add,
+                Token::Sub => CalcSteps::Sub,
+                Token::Flat(x) => CalcSteps::Value(*x),
+                Token::Roll(d, r) => {
+                    // TODO: don't use as because it can die on really large rolls but this is fine
+                    // for now
+                    CalcSteps::Value((0..*r).into_iter().map(|_| d.roll() as i32).sum())
+                }
+            })
+            .for_each(|x| {
+                if let CalcSteps::Value(v) = x {
+                    // TODO: Need to not raw add as it may overflow
+                    match prev {
+                        CalcSteps::Add => total += v,
+                        CalcSteps::Sub => total -= v,
+                        // if the prev was a value we don't need to do anything right now
+                        CalcSteps::Value(_) => (),
+                    }
+                };
+                prev = x;
+            });
+        total
     }
 }
 
@@ -71,9 +107,9 @@ mod tests {
             formula,
             Ok(Lexer {
                 tokens: vec![
-                    Token::Die(20, 1),
+                    Token::Roll(Dice::new(20), 1),
                     Token::Add,
-                    Token::Die(6, 2),
+                    Token::Roll(Dice::new(6), 2),
                     Token::Sub,
                     Token::Flat(456),
                 ]
