@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 pub static STRENGTH: usize = 0;
 pub static DEXTERITY: usize = 1;
 pub static CONSTITUTION: usize = 2;

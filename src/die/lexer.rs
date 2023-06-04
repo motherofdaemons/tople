@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use itertools::Itertools;
 
 use super::dice::Dice;
@@ -17,13 +15,17 @@ enum Token {
     Sub,
 }
 
+enum CalcSteps {
+    Add,
+    Sub,
+    Value(i32),
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct ParseDieFormulaError;
 
-impl FromStr for Lexer {
-    type Err = ParseDieFormulaError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl Lexer {
+    pub fn new(s: &str) -> Result<Self, ParseDieFormulaError> {
         let tokens: Result<Vec<Token>, ParseDieFormulaError> = s
             .split(' ')
             .map(|s| match s {
@@ -55,15 +57,7 @@ impl FromStr for Lexer {
         // TODO: validate that the tokens are valid by having value operation value so on and so on
         Ok(Self { tokens: tokens? })
     }
-}
 
-enum CalcSteps {
-    Add,
-    Sub,
-    Value(i32),
-}
-
-impl Lexer {
     #[must_use]
     pub fn calculate(&self) -> i32 {
         let mut total = 0;
@@ -102,9 +96,9 @@ mod tests {
     use super::*;
     #[test]
     fn parse_die_formula() {
-        let formula = "d20 + 2d6 - 456".parse::<Lexer>();
+        let lexer = Lexer::new("d20 + 2d6 - 456");
         assert_eq!(
-            formula,
+            lexer,
             Ok(Lexer {
                 tokens: vec![
                     Token::Roll(Dice::new(20), 1),
