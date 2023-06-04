@@ -78,7 +78,7 @@ impl Lexer {
                 Token::Roll(d, r) => {
                     // TODO: don't use as because it can die on really large rolls but this is fine
                     // for now
-                    CalcSteps::Value((0..*r).into_iter().map(|_| d.roll() as i32).sum())
+                    CalcSteps::Value((0..*r).map(|_| d.roll() as i32).sum())
                 }
             })
             .for_each(|x| {
