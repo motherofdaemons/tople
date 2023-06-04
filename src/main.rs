@@ -1,7 +1,7 @@
-use tople::die::formula::Formula;
+use tople::die::lexer::Lexer;
 
 fn main() {
-    let f: Formula = "d20+100".parse().unwrap();
+    let f: Lexer = "d20 + 100".parse().unwrap();
     println!("{}", f.calculate());
     println!("{}", f.calculate());
     println!("{}", f.calculate());

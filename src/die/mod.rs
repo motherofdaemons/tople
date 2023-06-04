@@ -1,2 +1,2 @@
 mod dice;
-pub mod formula;
+pub mod lexer;
