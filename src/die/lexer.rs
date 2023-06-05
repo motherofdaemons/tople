@@ -4,29 +4,23 @@ use super::dice::Dice;
 
 #[derive(Debug, PartialEq)]
 pub struct Lexer {
-    tokens: Vec<Token>,
+    pub tokens: Vec<Token>,
 }
 
 #[derive(Debug, PartialEq)]
-enum Token {
+pub enum Token {
     Roll(Dice, u32),
     Flat(i32),
     Add,
     Sub,
 }
 
-enum CalcSteps {
-    Add,
-    Sub,
-    Value(i32),
-}
-
 #[derive(Debug, PartialEq, Eq)]
-pub struct ParseDieFormulaError;
+pub struct LexDieFormulaError;
 
 impl Lexer {
-    pub fn new(s: &str) -> Result<Self, ParseDieFormulaError> {
-        let tokens: Result<Vec<Token>, ParseDieFormulaError> = s
+    pub fn new(s: &str) -> Result<Self, LexDieFormulaError> {
+        let tokens: Result<Vec<Token>, LexDieFormulaError> = s
             .split(' ')
             .map(|s| match s {
                 "+" => Ok(Token::Add),
@@ -35,18 +29,18 @@ impl Lexer {
                     if s.contains('d') {
                         match s.split('d').collect_tuple() {
                             Some(("", sides)) => Ok(Token::Roll(
-                                Dice::new(sides.parse::<u32>().map_err(|_| ParseDieFormulaError)?),
+                                Dice::new(sides.parse::<u32>().map_err(|_| LexDieFormulaError)?),
                                 1,
                             )),
                             Some((rolls, sides)) => Ok(Token::Roll(
-                                Dice::new(sides.parse::<u32>().map_err(|_| ParseDieFormulaError)?),
-                                rolls.parse::<u32>().map_err(|_| ParseDieFormulaError)?,
+                                Dice::new(sides.parse::<u32>().map_err(|_| LexDieFormulaError)?),
+                                rolls.parse::<u32>().map_err(|_| LexDieFormulaError)?,
                             )),
-                            None => Err(ParseDieFormulaError),
+                            None => Err(LexDieFormulaError),
                         }
                     } else {
                         Ok(Token::Flat(
-                            s.parse::<i32>().map_err(|_| ParseDieFormulaError)?,
+                            s.parse::<i32>().map_err(|_| LexDieFormulaError)?,
                         ))
                     }
                 }
@@ -56,38 +50,6 @@ impl Lexer {
             .collect();
         // TODO: validate that the tokens are valid by having value operation value so on and so on
         Ok(Self { tokens: tokens? })
-    }
-
-    #[must_use]
-    pub fn calculate(&self) -> i32 {
-        let mut total = 0;
-        // We want the first value to add so we start the calculator on add
-        let mut prev = CalcSteps::Add;
-        self.tokens
-            .iter()
-            .map(|t| match t {
-                Token::Add => CalcSteps::Add,
-                Token::Sub => CalcSteps::Sub,
-                Token::Flat(x) => CalcSteps::Value(*x),
-                Token::Roll(d, r) => {
-                    // TODO: don't use as because it can die on really large rolls but this is fine
-                    // for now
-                    CalcSteps::Value((0..*r).map(|_| d.roll() as i32).sum())
-                }
-            })
-            .for_each(|x| {
-                if let CalcSteps::Value(v) = x {
-                    // TODO: Need to not raw add as it may overflow
-                    match prev {
-                        CalcSteps::Add => total += v,
-                        CalcSteps::Sub => total -= v,
-                        // if the prev was a value we don't need to do anything right now
-                        CalcSteps::Value(_) => (),
-                    }
-                };
-                prev = x;
-            });
-        total
     }
 }
 
